@@ -22,11 +22,18 @@ const app = express();
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: process.env.FRONTEND_URL?.split(",") || ["http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: false
+    credentials: true
   })
 );
+
+app.get("/", (_req: Request, res: Response) => {
+  res.json({ 
+    message: "Todo List API",
+    status: "running"
+  });
+});
 
 app.get("/health", (_req: Request, res: Response) => {
   res.json({ ok: true });
@@ -40,14 +47,20 @@ app.use(errorHandler);
 
 const PORT = Number(process.env.PORT ?? 5174);
 
-async function start() {
-  await connectToMongo();
-  app.listen(PORT, () => {
-    console.log(`Server listening on http://localhost:${PORT}`);
+// Export app for serverless
+export { app };
+
+// Only start server if not in serverless environment
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  async function start() {
+    await connectToMongo();
+    app.listen(PORT, () => {
+      console.log(`Server listening on http://localhost:${PORT}`);
+    });
+  }
+
+  start().catch((e: unknown) => {
+    console.error("Failed to start server", e);
+    process.exit(1);
   });
 }
-
-start().catch((e: unknown) => {
-  console.error("Failed to start server", e);
-  process.exit(1);
-});
