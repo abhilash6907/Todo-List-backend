@@ -14,6 +14,12 @@ async function connectDB() {
 
 // Serverless function handler
 export default async (req: VercelRequest, res: VercelResponse) => {
-  await connectDB();
-  return app(req as any, res as any);
+  try {
+    await connectDB();
+    // Pass request to Express app
+    app(req as any, res as any);
+  } catch (error) {
+    console.error('Serverless function error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
